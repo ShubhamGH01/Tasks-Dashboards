@@ -455,7 +455,7 @@
         // 🔧 PASTE YOUR GOOGLE SHEET URL HERE
         // ============================================
         // Example: 'https://docs.google.com/spreadsheets/d/1ABC123xyz/edit#gid=0'
-        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?usp=sharing';
+        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZShatQbxkYmAloA3aj9b35LQ7wXKOmHxraLfQfrf-fNXYzjXnmVs69JFvJpEj9M0fWA/exec';
         
         // Convert Sheet URL to CSV export URL
         function getSheetCSVUrl(sheetUrl) {
@@ -473,52 +473,31 @@
         }
 
         // Fetch data from Google Sheets
-        async function fetchTaskCounts() {
-            if (GOOGLE_SHEET_URL === 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?usp=sharing') {
-                console.log('Google Sheet URL not configured yet');
-                setDefaultCounts();
-                return;
-            }
+async function fetchTaskCounts() {
+    try {
+        const csvUrl = getSheetCSVUrl(GOOGLE_SHEET_URL);
+        if (!csvUrl) return;
 
-            try {
-                const csvUrl = getSheetCSVUrl(GOOGLE_SHEET_URL);
-                if (!csvUrl) {
-                    setDefaultCounts();
-                    return;
-                }
+        const response = await fetch(csvUrl);
+        const csvText = await response.text();
+        const rows = csvText.trim().split('\n').map(r => r.split(',').map(c => c.trim()));
 
-                const response = await fetch(csvUrl);
-                const csvText = await response.text();
-                
-                const rows = csvText.split('\n').map(row => 
-                    row.split(',').map(cell => cell.trim())
-                );
-                
-                rows.forEach(row => {
-                    if (row.length >= 2) {
-                        const label = row[0].toLowerCase();
-                        const count = parseInt(row[1]) || 0;
-                        
-                        if (label.includes('total')) {
-                            animateCount('totalCount', count);
-                        } else if (label.includes('wip') || label.includes('progress')) {
-                            animateCount('wipCount', count);
-                        } else if (label.includes('closed') || label.includes('complete')) {
-                            animateCount('closedCount', count);
-                        } else if (label.includes('pending')) {
-                            animateCount('pendingCount', count);
-                        }
-                    }
-                });
-                
-                console.log('✅ Data loaded successfully!');
-                
-            } catch (error) {
-                console.error('❌ Error fetching data:', error);
-                console.log('Make sure your Google Sheet is set to "Anyone with the link can view"');
-                setDefaultCounts();
-            }
-        }
+        const headers = rows.shift();
+        const data = Object.fromEntries(rows.map(r => [r[0].toLowerCase(), parseInt(r[1]) || 0]));
+
+        // Match keys
+        animateCount('totalCount', data.total || 0);
+        animateCount('wipCount', data.wip || data['in progress'] || 0);
+        animateCount('closedCount', data.completed || data.closed || 0);
+        animateCount('pendingCount', data.pending || 0);
+
+        console.log('✅ Data loaded successfully!');
+    } catch (error) {
+        console.error('❌ Error fetching data:', error);
+        console.log('Make sure your Google Sheet is set to "Anyone with the link can view"');
+        setDefaultCounts();
+    }
+}
 
         // Animate count with easing
         function animateCount(elementId, targetCount) {
