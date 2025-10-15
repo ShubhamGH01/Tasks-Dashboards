@@ -569,8 +569,8 @@
 
         function setDefaultCounts() {
             document.getElementById('totalCount').textContent = '0';
+            document.getElementById('closedCount').textContent = '0';            
             document.getElementById('wipCount').textContent = '0';
-            document.getElementById('closedCount').textContent = '0';
             document.getElementById('pendingCount').textContent = '0';
             const el = document.getElementById('lastRefresh');
             if (el) el.textContent = 'Last updated: --';
