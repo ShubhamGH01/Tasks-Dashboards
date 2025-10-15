@@ -579,22 +579,38 @@
             alert(`Showing details for ${status.toUpperCase()} tasks`);
         }
 
-        // Helper to set last refresh timestamp (human-friendly)
-        function setLastRefreshLabel(success = true, note = '') {
+        // Helper to set last refresh timestamp (human-friendly).
+        // Supports three modes: 'success', 'error', 'updating'
+        function setLastRefreshLabel(mode = 'success', note = '') {
             const el = document.getElementById('lastRefresh');
             if (!el) return;
-            const now = new Date();
-            const timeStr = now.toLocaleString();
-            if (success) el.textContent = `Last updated: ${timeStr}`;
-            else el.textContent = `Last update failed: ${timeStr}` + (note ? ` (${note})` : '');
+            try {
+                const now = new Date();
+                if (mode === 'updating') {
+                    el.textContent = 'Last updated: updating…';
+                    return;
+                }
+                const timeStr = now.toLocaleString();
+                if (mode === 'success') el.textContent = `Last updated: ${timeStr}`;
+                else el.textContent = `Last update failed: ${timeStr}` + (note ? ` (${note})` : '');
+            } catch (e) {
+                // Fallback in case toLocaleString throws (very rare)
+                if (mode === 'updating') el.textContent = 'Last updated: updating…';
+                else el.textContent = mode === 'success' ? 'Last updated: (time unavailable)' : 'Last update failed';
+            }
         }
 
         // Main fetch routine (supports JSON from Apps Script OR CSV from sheet)
         async function fetchTaskCounts() {
+            // Immediately mark updating so user sees timestamp change even if fetch is slow/fails.
+            setLastRefreshLabel('updating');
+
             try {
                 const url = getSheetCSVUrl(GOOGLE_SHEET_URL);
-                if (!url) return;
-                // We set no-store and add timestamp in URL to force fresh data on each call
+                if (!url) {
+                    throw new Error('Invalid sheet URL');
+                }
+                // Force fresh fetch
                 const resp = await fetch(url, { cache: 'no-store', mode: 'cors' });
                 if (!resp.ok) throw new Error(`Network response was not ok: ${resp.status}`);
 
@@ -608,7 +624,6 @@
                     try {
                         json = await resp.json();
                     } catch (e) {
-                        // Sometimes Apps Script returns JSON with text/html header; try text then parse
                         const text = await resp.text();
                         json = JSON.parse(text);
                     }
@@ -664,13 +679,12 @@
                 animateCount('closedCount', closedVal);
                 animateCount('pendingCount', pendingVal);
 
-                setLastRefreshLabel(true);
+                setLastRefreshLabel('success');
                 console.log('✅ Data loaded', { totalVal, wipVal, closedVal, pendingVal, dataMap });
             } catch (err) {
                 console.error('❌ Error fetching/parsing data:', err);
-                console.log('Make sure your Google Sheet is shared as "Anyone with the link can view" or deploy an Apps Script webapp set to "Anyone, even anonymous" and use its URL.');
                 setDefaultCounts();
-                setLastRefreshLabel(false, err.message || '');
+                setLastRefreshLabel('error', err && err.message ? err.message : '');
             }
         }
 
@@ -678,12 +692,12 @@
             setDefaultCounts();
             fetchTaskCounts();
             // Poll every 60 seconds so UI updates shortly after sheet changes.
-            // If you prefer less frequent polling, increase this value (e.g., 5*60*1000 for 5 minutes).
             setInterval(fetchTaskCounts, 60 * 1000);
         });
 
         function refreshCounts() {
-            console.log('🔄 Refreshing data...');
+            // Provide instant visual feedback when user manually refreshes
+            setLastRefreshLabel('updating');
             fetchTaskCounts();
         }
     </script>
