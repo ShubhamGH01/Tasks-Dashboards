@@ -1,251 +1,580 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tasks Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks Dashboards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <style>
-    /* ----------- Base Styles ----------- */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
-      min-height: 100vh;
-      padding: 20px;
-      overflow-x: hidden;
-      color: white;
-    }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-      background-size: 50px 50px;
-      animation: moveBg 20s linear infinite;
-      pointer-events: none;
-    }
-    @keyframes moveBg {
-      0% { transform: translate(0, 0); }
-      100% { transform: translate(50px, 50px); }
-    }
+        /* Animated background elements */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+            pointer-events: none;
+        }
 
-    .container { max-width: 1400px; margin: auto; position: relative; z-index: 1; }
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
 
-    /* ----------- Header ----------- */
-    .header { text-align: center; margin-bottom: 50px; }
-    .header h1 {
-      font-size: 3.5em;
-      font-weight: 800;
-      background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 30px rgba(167, 139, 250, 0.5);
-    }
-    .header p { font-size: 1.3em; font-weight: 300; opacity: 0.9; }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
 
-    .refresh-btn {
-      margin-top: 20px;
-      padding: 14px 35px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 50px;
-      color: white;
-      font-weight: 600;
-      font-size: 1em;
-      cursor: pointer;
-      transition: all 0.4s ease;
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-      overflow: hidden;
-      position: relative;
-    }
-    .refresh-btn::before {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      transition: left 0.5s;
-    }
-    .refresh-btn:hover::before { left: 100%; }
-    .refresh-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 35px rgba(102,126,234,0.6); }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
 
-    /* ----------- Status Section ----------- */
-    .status-section {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(20px);
-      border-radius: 30px;
-      padding: 40px;
-      margin-bottom: 40px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    .section-title { font-size: 2em; margin-bottom: 30px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-    .section-title .icon { background: #667eea; padding: 10px; border-radius: 12px; }
+        .header h1 {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(167, 139, 250, 0.5);
+            letter-spacing: -1px;
+        }
 
-    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 25px; }
-    .status-card {
-      background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.85) 100%);
-      border-radius: 25px;
-      padding: 35px 30px;
-      text-align: center;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      position: relative;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-    .status-card:hover { transform: translateY(-8px) scale(1.02); }
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
 
-    .status-card.total::before { background: #667eea; }
-    .status-card.wip::before { background: #f5576c; }
-    .status-card.closed::before { background: #00f2fe; }
-    .status-card.pending::before { background: #fa709a; }
+        .refresh-btn {
+            margin-top: 20px;
+            padding: 14px 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .status-icon { font-size: 2.5em; margin-bottom: 15px; }
-    .status-count {
-      font-size: 3.5em;
-      font-weight: 900;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .status-label { font-size: 1.1em; color: #555; font-weight: 600; text-transform: uppercase; }
+        .refresh-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
 
-    /* ----------- Responsive ----------- */
-    @media (max-width: 768px) {
-      .header h1 { font-size: 2.4em; }
-      .status-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-  </style>
+        .refresh-btn:hover::before {
+            left: 100%;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Task Status Section */
+        .status-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: white;
+            margin-bottom: 30px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-title .icon {
+            font-size: 1.3em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
+            border-radius: 25px;
+            padding: 35px 30px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            transition: height 0.4s ease;
+        }
+
+        .status-card:hover::before {
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        .status-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .status-card.total::before {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .status-card.wip::before {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .status-card.closed::before {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .status-card.pending::before {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .status-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            display: inline-block;
+            transition: transform 0.4s ease;
+        }
+
+        .status-card:hover .status-icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .status-count {
+            font-size: 3.5em;
+            font-weight: 900;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .status-label {
+            font-size: 1.1em;
+            color: #555;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Forms Section */
+        .forms-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeInUp 1s ease;
+        }
+
+        .forms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .form-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .form-card:hover::before {
+            opacity: 1;
+        }
+
+        .form-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.6);
+        }
+
+        .form-icon {
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            display: inline-block;
+            transition: transform 0.4s ease;
+        }
+
+        .form-card:hover .form-icon {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .form-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .form-card p {
+            opacity: 0.95;
+            font-size: 1em;
+            line-height: 1.5;
+            font-weight: 300;
+        }
+
+        .form-card .arrow {
+            align-self: flex-end;
+            font-size: 1.8em;
+            font-weight: bold;
+            transition: transform 0.4s ease;
+        }
+
+        .form-card:hover .arrow {
+            transform: translateX(10px);
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .forms-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 1.5em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>⚡ Tasks Dashboard</h1>
-      <p>Real-time task monitoring & request management</p>
-      <button class="refresh-btn" onclick="refreshCounts()">🔄 Refresh Data</button>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Tasks Dashboards</h1>
+            <p>Real-time task monitoring & request management</p>
+            <button onclick="refreshCounts()" class="refresh-btn">
+                🔄 Refresh Data
+            </button>
+        </div>
+
+        <!-- Task Status Section -->
+        <div class="status-section">
+            <h2 class="section-title">
+                <span class="icon">📊</span>
+                Task Status Overview
+            </h2>
+            <div class="status-grid">
+                <div class="status-card total" onclick="showDetails('total')">
+                    <div class="status-icon">📋</div>
+                    <div class="status-count" id="totalCount">45</div>
+                    <div class="status-label">Total Tasks</div>
+                </div>
+                <div class="status-card wip" onclick="showDetails('wip')">
+                    <div class="status-icon">⚙️</div>
+                    <div class="status-count" id="wipCount">12</div>
+                    <div class="status-label">In Progress</div>
+                </div>
+                <div class="status-card closed" onclick="showDetails('closed')">
+                    <div class="status-icon">✅</div>
+                    <div class="status-count" id="closedCount">28</div>
+                    <div class="status-label">Completed</div>
+                </div>
+                <div class="status-card pending" onclick="showDetails('pending')">
+                    <div class="status-icon">⏳</div>
+                    <div class="status-count" id="pendingCount">5</div>
+                    <div class="status-label">Pending</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forms Section -->
+        <div class="forms-section">
+            <h2 class="section-title">
+                <span class="icon">📝</span>
+                Quick Actions
+            </h2>
+            <div class="forms-grid">
+                <a href="https://forms.zohopublic.in/greenhonchos/form/DashboardRequest/formperma/D5LxM0FES4C1i55dS6H72jYAv38wpKaE4omPavzRso8" target="_blank" class="form-card">
+                    <div class="form-icon">🆕</div>
+                    <h3>New Task Request</h3>
+                    <p>Create a new task request</p>
+                    <span class="arrow">→</span>
+                </a>
+                
+                <a href="https://forms.zohopublic.in/greenhonchos/form/MISRequestSubmission/formperma/NwWdbM_gA7L8_047_a8EamlrHVEghMBcCrnvTAXNhlE" target="_blank" class="form-card">
+                    <div class="form-icon">🛠️</div>
+                    <h3>Support Request</h3>
+                    <p>Get technical support</p>
+                    <span class="arrow">→</span>
+                </a>
+                
+                <a href="https://forms.zohopublic.in/greenhonchos/form/LalsCatalog/formperma/n51BZIMJIVqQ96E3-XNmWs4ede0vmE07dN611ydELPA" target="_blank" class="form-card">
+                    <div class="form-icon">🔄</div>
+                    <h3>Change Request</h3>
+                    <p>Modify existing tasks</p>
+                    <span class="arrow">→</span>
+                </a>
+                
+                <a href="https://taskmaster.greenhonchos.in/login.php" target="_blank" class="form-card">
+                    <div class="form-icon">🐛</div>
+                    <h3>Bug Report</h3>
+                    <p>Report a bug or issue</p>
+                    <span class="arrow">→</span>
+                </a>
+                
+                <a href="https://forms.zohopublic.in/greenhonchos/form/LalsCatalog/formperma/n51BZIMJIVqQ96E3-XNmWs4ede0vmE07dN611ydELPA" target="_blank" class="form-card">
+                    <div class="form-icon">✨</div>
+                    <h3>Feature Request</h3>
+                    <p>Suggest new features</p>
+                    <span class="arrow">→</span>
+                </a>
+                
+                <a href="https://forms.zohopublic.in/greenhonchos/form/MISRequestSubmission/formperma/NwWdbM_gA7L8_047_a8EamlrHVEghMBcCrnvTAXNhlE" target="_blank" class="form-card">
+                    <div class="form-icon">💬</div>
+                    <h3>Feedback</h3>
+                    <p>Share your feedback</p>
+                    <span class="arrow">→</span>
+                </a>
+            </div>
+        </div>
     </div>
 
-    <div class="status-section">
-      <h2 class="section-title"><span class="icon">📊</span>Task Status Overview</h2>
-      <div class="status-grid">
-        <div class="status-card total" onclick="showDetails('total')">
-          <div class="status-icon">📋</div>
-          <div class="status-count" id="totalCount">0</div>
-          <div class="status-label">Total Tasks</div>
-        </div>
-        <div class="status-card wip" onclick="showDetails('wip')">
-          <div class="status-icon">⚙️</div>
-          <div class="status-count" id="wipCount">0</div>
-          <div class="status-label">In Progress</div>
-        </div>
-        <div class="status-card closed" onclick="showDetails('closed')">
-          <div class="status-icon">✅</div>
-          <div class="status-count" id="closedCount">0</div>
-          <div class="status-label">Completed</div>
-        </div>
-        <div class="status-card pending" onclick="showDetails('pending')">
-          <div class="status-icon">⏳</div>
-          <div class="status-count" id="pendingCount">0</div>
-          <div class="status-label">Pending</div>
-        </div>
-      </div>
-    </div>
-  </div>
+    <script>
+        // ============================================
+        // 🔧 PASTE YOUR GOOGLE SHEET URL HERE
+        // ============================================
+        // Example: 'https://docs.google.com/spreadsheets/d/1ABC123xyz/edit#gid=0'
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?usp=sharing';
+        
+        // Convert Sheet URL to CSV export URL
+        function getSheetCSVUrl(sheetUrl) {
+            const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (!match) {
+                console.error('Invalid Google Sheet URL');
+                return null;
+            }
+            const sheetId = match[1];
+            
+            const gidMatch = sheetUrl.match(/[#&]gid=([0-9]+)/);
+            const gid = gidMatch ? gidMatch[1] : '0';
+            
+            return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+        }
 
-  <script>
-    // ======================================
-    // 🔗 CONFIGURATION
-    // ======================================
-    const GOOGLE_SHEET_URL =
-      "https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?gid=0#gid=0";
+        // Fetch data from Google Sheets
+        async function fetchTaskCounts() {
+            if (GOOGLE_SHEET_URL === 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?usp=sharing') {
+                console.log('Google Sheet URL not configured yet');
+                setDefaultCounts();
+                return;
+            }
 
-    // Convert Sheet URL to CSV
-    function getSheetCSVUrl(sheetUrl) {
-      try {
-        const match = sheetUrl.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-        if (!match) return null;
-        const sheetId = match[1];
-        const gidMatch = sheetUrl.match(/gid=([0-9]+)/);
-        const gid = gidMatch ? gidMatch[1] : "0";
-        return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-      } catch (err) {
-        console.error("Error parsing sheet URL:", err);
-        return null;
-      }
-    }
+            try {
+                const csvUrl = getSheetCSVUrl(GOOGLE_SHEET_URL);
+                if (!csvUrl) {
+                    setDefaultCounts();
+                    return;
+                }
 
-    // Default counts if data fails
-    function setDefaultCounts() {
-      document.getElementById("totalCount").textContent = "0";
-      document.getElementById("wipCount").textContent = "0";
-      document.getElementById("closedCount").textContent = "0";
-      document.getElementById("pendingCount").textContent = "0";
-    }
+                const response = await fetch(csvUrl);
+                const csvText = await response.text();
+                
+                const rows = csvText.split('\n').map(row => 
+                    row.split(',').map(cell => cell.trim())
+                );
+                
+                rows.forEach(row => {
+                    if (row.length >= 2) {
+                        const label = row[0].toLowerCase();
+                        const count = parseInt(row[1]) || 0;
+                        
+                        if (label.includes('total')) {
+                            animateCount('totalCount', count);
+                        } else if (label.includes('wip') || label.includes('progress')) {
+                            animateCount('wipCount', count);
+                        } else if (label.includes('closed') || label.includes('complete')) {
+                            animateCount('closedCount', count);
+                        } else if (label.includes('pending')) {
+                            animateCount('pendingCount', count);
+                        }
+                    }
+                });
+                
+                console.log('✅ Data loaded successfully!');
+                
+            } catch (error) {
+                console.error('❌ Error fetching data:', error);
+                console.log('Make sure your Google Sheet is set to "Anyone with the link can view"');
+                setDefaultCounts();
+            }
+        }
 
-    // Animate number count
-    function animateCount(id, target) {
-      const el = document.getElementById(id);
-      let start = 0;
-      const duration = 1000;
-      const startTime = performance.now();
+        // Animate count with easing
+        function animateCount(elementId, targetCount) {
+            const element = document.getElementById(elementId);
+            const startCount = 0;
+            const duration = 1200;
+            const startTime = performance.now();
+            
+            function easeOutQuart(t) {
+                return 1 - Math.pow(1 - t, 4);
+            }
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easedProgress = easeOutQuart(progress);
+                
+                const currentCount = Math.floor(easedProgress * targetCount);
+                element.textContent = currentCount;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    element.textContent = targetCount;
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
 
-      function update(time) {
-        const progress = Math.min((time - startTime) / duration, 1);
-        el.textContent = Math.floor(progress * target);
-        if (progress < 1) requestAnimationFrame(update);
-      }
-      requestAnimationFrame(update);
-    }
+        // Set default counts
+        function setDefaultCounts() {
+            document.getElementById('totalCount').textContent = '45';
+            document.getElementById('wipCount').textContent = '12';
+            document.getElementById('closedCount').textContent = '28';
+            document.getElementById('pendingCount').textContent = '5';
+        }
 
-    // Fetch data from Google Sheets
-    async function fetchTaskCounts() {
-      try {
-        const csvUrl = getSheetCSVUrl(GOOGLE_SHEET_URL);
-        if (!csvUrl) return setDefaultCounts();
+        function showDetails(status) {
+            alert(`Showing details for ${status.toUpperCase()} tasks`);
+        }
 
-        const response = await fetch(csvUrl);
-        const csvText = await response.text();
-        const rows = csvText.split("\n").map(r => r.split(",").map(c => c.trim()));
-
-        rows.forEach(row => {
-          if (row.length >= 2) {
-            const label = row[0].toLowerCase();
-            const count = parseInt(row[1]) || 0;
-            if (label.includes("total")) animateCount("totalCount", count);
-            else if (label.includes("progress") || label.includes("wip")) animateCount("wipCount", count);
-            else if (label.includes("complete") || label.includes("closed")) animateCount("closedCount", count);
-            else if (label.includes("pending")) animateCount("pendingCount", count);
-          }
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            setDefaultCounts();
+            fetchTaskCounts();
+            
+            // Auto-refresh every 5 minutes
+            setInterval(fetchTaskCounts, 5 * 60 * 1000);
         });
 
-        console.log("✅ Data loaded successfully!");
-      } catch (err) {
-        console.error("❌ Error fetching data:", err);
-        console.log("Ensure Google Sheet sharing is set to 'Anyone with the link → Viewer'");
-        setDefaultCounts();
-      }
-    }
-
-    // Button: manual refresh
-    function refreshCounts() {
-      console.log("🔄 Refreshing data...");
-      fetchTaskCounts();
-    }
-
-    // Click: show details
-    function showDetails(status) {
-      alert(`Showing details for ${status.toUpperCase()} tasks`);
-    }
-
-    // Auto initialize
-    window.addEventListener("load", () => {
-      fetchTaskCounts();
-      setInterval(fetchTaskCounts, 5 * 60 * 1000); // refresh every 5 minutes
-    });
-  </script>
+        // Manual refresh
+        function refreshCounts() {
+            console.log('🔄 Refreshing data...');
+            fetchTaskCounts();
+        }
+    </script>
 </body>
 </html>
