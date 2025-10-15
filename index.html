@@ -457,12 +457,12 @@
         // 1) Google Sheet URL (docs.google.com/spreadsheets/d/...) -> CSV export will be used
         // 2) Apps Script webapp URL (script.google.com/macros/...) -> JSON expected
         // ============================================
-        // Using the Apps Script webapp URL you provided:
-        const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZShatQbxkYmAloA3aj9b35LQ7wXKOmHxraLfQfrf-fNXYzjXnmVs69JFvJpEj9M0fWA/exec';
-        // You can instead set to the direct sheet URL:
-        // const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit#gid=0';
+        // Changed to the Google Sheet URL you specified below (CSV export will be used).
+        // IMPORTANT: Make sure the sheet is shared "Anyone with the link can view" for this to work from a browser.
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?gid=0#gid=0';
 
         // If given a docs.google.com/spreadsheets URL, convert to CSV export URL.
+        // We also append a cache-busting timestamp so browser and Google don't return stale data.
         function getSheetCSVUrl(sheetUrl) {
             if (!sheetUrl) return null;
             if (sheetUrl.includes('script.google.com')) {
@@ -477,7 +477,8 @@
             const sheetId = match[1];
             const gidMatch = sheetUrl.match(/[#&]gid=([0-9]+)/);
             const gid = gidMatch ? gidMatch[1] : '0';
-            return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+            // cache buster (updated on every call)
+            return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&t=${Date.now()}`;
         }
 
         // Robust CSV parser (handles quoted fields and CRLF)
@@ -555,7 +556,8 @@
             try {
                 const url = getSheetCSVUrl(GOOGLE_SHEET_URL);
                 if (!url) return;
-                const resp = await fetch(url, { cache: 'no-cache' });
+                // We set no-cache and add timestamp in URL to force fresh data on each call
+                const resp = await fetch(url, { cache: 'no-store', mode: 'cors' });
                 if (!resp.ok) throw new Error(`Network response was not ok: ${resp.status}`);
 
                 const contentType = resp.headers.get('content-type') || '';
@@ -614,10 +616,10 @@
                 }
 
                 // Map keys to UI
-                const totalVal = dataMap.total || dataMap['all'] || dataMap['total tasks'] || 0;
-                const wipVal = dataMap.wip || dataMap['in progress'] || dataMap['inprogress'] || dataMap['working'] || 0;
+                const totalVal = dataMap.total || dataMap['all'] || dataMap['total tasks'] || dataMap['total_tasks'] || 0;
+                const wipVal = dataMap.wip || dataMap['in progress'] || dataMap['inprogress'] || dataMap.working || 0;
                 const closedVal = dataMap.closed || dataMap.completed || dataMap['done'] || 0;
-                const pendingVal = dataMap.pending || dataMap['on hold'] || 0;
+                const pendingVal = dataMap.pending || dataMap['on hold'] || dataMap['pending tasks'] || 0;
 
                 animateCount('totalCount', totalVal);
                 animateCount('wipCount', wipVal);
@@ -627,7 +629,7 @@
                 console.log('✅ Data loaded', { totalVal, wipVal, closedVal, pendingVal, dataMap });
             } catch (err) {
                 console.error('❌ Error fetching/parsing data:', err);
-                console.log('Make sure your Google Sheet is shared as "Anyone with the link can view" or your Apps Script returns JSON and is deployed to "Anyone, even anonymous".');
+                console.log('Make sure your Google Sheet is shared as "Anyone with the link can view" or deploy an Apps Script webapp set to "Anyone, even anonymous" and use its URL.');
                 setDefaultCounts();
             }
         }
@@ -635,7 +637,9 @@
         window.addEventListener('load', function() {
             setDefaultCounts();
             fetchTaskCounts();
-            setInterval(fetchTaskCounts, 5 * 60 * 1000);
+            // Poll every 60 seconds so UI updates shortly after sheet changes.
+            // If you prefer less frequent polling, increase this value (e.g., 5*60*1000 for 5 minutes).
+            setInterval(fetchTaskCounts, 60 * 1000);
         });
 
         function refreshCounts() {
