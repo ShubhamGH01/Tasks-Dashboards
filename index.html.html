@@ -455,7 +455,7 @@
         // 🔧 PASTE YOUR GOOGLE SHEET URL HERE
         // ============================================
         // Example: 'https://docs.google.com/spreadsheets/d/1ABC123xyz/edit#gid=0'
-        const GOOGLE_SHEET_URL = 'YOUR_GOOGLE_SHEET_URL_HERE';
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?usp=sharing';
         
         // Convert Sheet URL to CSV export URL
         function getSheetCSVUrl(sheetUrl) {
@@ -474,7 +474,7 @@
 
         // Fetch data from Google Sheets
         async function fetchTaskCounts() {
-            if (GOOGLE_SHEET_URL === 'YOUR_GOOGLE_SHEET_URL_HERE') {
+            if (GOOGLE_SHEET_URL === 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?usp=sharing') {
                 console.log('Google Sheet URL not configured yet');
                 setDefaultCounts();
                 return;
