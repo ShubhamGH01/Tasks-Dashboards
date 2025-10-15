@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Tasks Dashboards</title>
     <style>
         * {
@@ -452,83 +452,93 @@
 
     <script>
         // ============================================
-        // 🔧 PASTE YOUR GOOGLE SHEET URL HERE
+        // 🔧 PASTE YOUR GOOGLE SHEET OR APPS-SCRIPT URL HERE
+        // Use one of:
+        // 1) Google Sheet URL (docs.google.com/spreadsheets/d/...) -> CSV export will be used
+        // 2) Apps Script webapp URL (script.google.com/macros/...) -> JSON expected
         // ============================================
-        // Example: 'https://docs.google.com/spreadsheets/d/1ABC123xyz/edit#gid=0'
+        // Using the Apps Script webapp URL you provided:
         const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzZShatQbxkYmAloA3aj9b35LQ7wXKOmHxraLfQfrf-fNXYzjXnmVs69JFvJpEj9M0fWA/exec';
-        
-        // Convert Sheet URL to CSV export URL
+        // You can instead set to the direct sheet URL:
+        // const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit#gid=0';
+
+        // If given a docs.google.com/spreadsheets URL, convert to CSV export URL.
         function getSheetCSVUrl(sheetUrl) {
+            if (!sheetUrl) return null;
+            if (sheetUrl.includes('script.google.com')) {
+                // Apps Script webapp - return as-is (we'll attempt JSON)
+                return sheetUrl;
+            }
             const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
             if (!match) {
-                console.error('Invalid Google Sheet URL');
+                console.error('Invalid Google Sheet URL. Provide a docs.google.com/spreadsheets URL or an Apps Script webapp URL.');
                 return null;
             }
             const sheetId = match[1];
-            
             const gidMatch = sheetUrl.match(/[#&]gid=([0-9]+)/);
             const gid = gidMatch ? gidMatch[1] : '0';
-            
             return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
         }
 
-        // Fetch data from Google Sheets
-async function fetchTaskCounts() {
-    try {
-        const csvUrl = getSheetCSVUrl(GOOGLE_SHEET_URL);
-        if (!csvUrl) return;
-
-        const response = await fetch(csvUrl);
-        const csvText = await response.text();
-        const rows = csvText.trim().split('\n').map(r => r.split(',').map(c => c.trim()));
-
-        const headers = rows.shift();
-        const data = Object.fromEntries(rows.map(r => [r[0].toLowerCase(), parseInt(r[1]) || 0]));
-
-        // Match keys
-        animateCount('totalCount', data.total || 0);
-        animateCount('wipCount', data.wip || data['in progress'] || 0);
-        animateCount('closedCount', data.completed || data.closed || 0);
-        animateCount('pendingCount', data.pending || 0);
-
-        console.log('✅ Data loaded successfully!');
-    } catch (error) {
-        console.error('❌ Error fetching data:', error);
-        console.log('Make sure your Google Sheet is set to "Anyone with the link can view"');
-        setDefaultCounts();
-    }
-}
-
-        // Animate count with easing
-        function animateCount(elementId, targetCount) {
-            const element = document.getElementById(elementId);
-            const startCount = 0;
-            const duration = 1200;
-            const startTime = performance.now();
-            
-            function easeOutQuart(t) {
-                return 1 - Math.pow(1 - t, 4);
-            }
-            
-            function update(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easedProgress = easeOutQuart(progress);
-                
-                const currentCount = Math.floor(easedProgress * targetCount);
-                element.textContent = currentCount;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(update);
-                } else {
-                    element.textContent = targetCount;
+        // Robust CSV parser (handles quoted fields and CRLF)
+        function parseCSV(text) {
+            const rows = [];
+            let row = [];
+            let cur = '';
+            let inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                const next = text[i + 1];
+                if (ch === '"') {
+                    if (inQuotes && next === '"') {
+                        // Escaped quote
+                        cur += '"';
+                        i++; // skip next
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                    continue;
                 }
+                if (ch === ',' && !inQuotes) {
+                    row.push(cur);
+                    cur = '';
+                    continue;
+                }
+                if ((ch === '\n' || ch === '\r') && !inQuotes) {
+                    if (ch === '\r' && next === '\n') { i++; }
+                    row.push(cur);
+                    rows.push(row);
+                    row = [];
+                    cur = '';
+                    continue;
+                }
+                cur += ch;
             }
-            
-            requestAnimationFrame(update);
+            if (cur !== '' || row.length > 0) {
+                row.push(cur);
+                rows.push(row);
+            }
+            return rows.map(r => r.map(c => c.trim()));
         }
 
-        // Set default counts
+        function animateCount(elementId, targetCount) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            const start = parseInt(element.textContent.replace(/\D/g, '')) || 0;
+            const duration = 900;
+            const startTime = performance.now();
+            function easeOutQuad(t){ return t*(2-t); }
+            function step(now) {
+                const t = Math.min(1, (now - startTime) / duration);
+                const eased = easeOutQuad(t);
+                const value = Math.floor(start + (targetCount - start) * eased);
+                element.textContent = value;
+                if (t < 1) requestAnimationFrame(step);
+                else element.textContent = targetCount;
+            }
+            requestAnimationFrame(step);
+        }
+
         function setDefaultCounts() {
             document.getElementById('totalCount').textContent = '45';
             document.getElementById('wipCount').textContent = '12';
@@ -540,16 +550,94 @@ async function fetchTaskCounts() {
             alert(`Showing details for ${status.toUpperCase()} tasks`);
         }
 
-        // Initialize on page load
+        // Main fetch routine (supports JSON from Apps Script OR CSV from sheet)
+        async function fetchTaskCounts() {
+            try {
+                const url = getSheetCSVUrl(GOOGLE_SHEET_URL);
+                if (!url) return;
+                const resp = await fetch(url, { cache: 'no-cache' });
+                if (!resp.ok) throw new Error(`Network response was not ok: ${resp.status}`);
+
+                const contentType = resp.headers.get('content-type') || '';
+
+                let dataMap = {};
+
+                if (contentType.includes('application/json') || url.includes('script.google.com')) {
+                    // Parse JSON (Apps Script webapp)
+                    let json;
+                    try {
+                        json = await resp.json();
+                    } catch (e) {
+                        // Sometimes Apps Script returns JSON with text/html header; try text then parse
+                        const text = await resp.text();
+                        json = JSON.parse(text);
+                    }
+                    Object.keys(json).forEach(k => {
+                        const key = k.toLowerCase();
+                        const val = parseInt(json[k]) || 0;
+                        dataMap[key] = val;
+                    });
+                } else {
+                    // Parse CSV
+                    const text = await resp.text();
+                    const rows = parseCSV(text).filter(r => r.length > 0 && (r.some(c => c !== '')));
+                    if (rows.length === 0) throw new Error('CSV is empty or could not be parsed.');
+
+                    const headerRow = rows[0].map(h => h.toLowerCase());
+                    const hasHeaders = headerRow.some(h => /status|key|name|type|label/.test(h)) &&
+                                       headerRow.some(h => /count|value|total|number/.test(h));
+                    if (hasHeaders) {
+                        const headers = headerRow;
+                        const keyField = headers.find(h => /status|key|name|type|label/.test(h));
+                        const valField = headers.find(h => /count|value|total|number/.test(h));
+                        for (let i = 1; i < rows.length; i++) {
+                            const r = rows[i];
+                            if (r.length === 0) continue;
+                            const obj = {};
+                            for (let j = 0; j < headers.length; j++) {
+                                obj[headers[j]] = (r[j] || '').trim();
+                            }
+                            const key = (obj[keyField] || '').toLowerCase();
+                            const val = parseInt(obj[valField]) || 0;
+                            if (key) dataMap[key] = val;
+                        }
+                    } else {
+                        // assume two columns: key,value
+                        rows.forEach(r => {
+                            if (r.length >= 2) {
+                                const key = (r[0] || '').toLowerCase();
+                                const val = parseInt(r[1]) || 0;
+                                if (key) dataMap[key] = val;
+                            }
+                        });
+                    }
+                }
+
+                // Map keys to UI
+                const totalVal = dataMap.total || dataMap['all'] || dataMap['total tasks'] || 0;
+                const wipVal = dataMap.wip || dataMap['in progress'] || dataMap['inprogress'] || dataMap['working'] || 0;
+                const closedVal = dataMap.closed || dataMap.completed || dataMap['done'] || 0;
+                const pendingVal = dataMap.pending || dataMap['on hold'] || 0;
+
+                animateCount('totalCount', totalVal);
+                animateCount('wipCount', wipVal);
+                animateCount('closedCount', closedVal);
+                animateCount('pendingCount', pendingVal);
+
+                console.log('✅ Data loaded', { totalVal, wipVal, closedVal, pendingVal, dataMap });
+            } catch (err) {
+                console.error('❌ Error fetching/parsing data:', err);
+                console.log('Make sure your Google Sheet is shared as "Anyone with the link can view" or your Apps Script returns JSON and is deployed to "Anyone, even anonymous".');
+                setDefaultCounts();
+            }
+        }
+
         window.addEventListener('load', function() {
             setDefaultCounts();
             fetchTaskCounts();
-            
-            // Auto-refresh every 5 minutes
             setInterval(fetchTaskCounts, 5 * 60 * 1000);
         });
 
-        // Manual refresh
         function refreshCounts() {
             console.log('🔄 Refreshing data...');
             fetchTaskCounts();
