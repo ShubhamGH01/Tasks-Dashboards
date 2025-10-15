@@ -124,15 +124,24 @@
             animation: fadeInUp 0.8s ease;
         }
 
+        /* New header wrapper: title + last refresh */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
         .section-title {
             font-size: 2em;
             color: white;
-            margin-bottom: 30px;
             font-weight: 700;
             display: flex;
             align-items: center;
             gap: 15px;
             letter-spacing: -0.5px;
+            margin: 0; /* moved spacing to .section-header */
         }
 
         .section-title .icon {
@@ -141,6 +150,14 @@
             padding: 12px;
             border-radius: 15px;
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .last-refresh {
+            color: rgba(255,255,255,0.95);
+            font-size: 0.95em;
+            opacity: 0.95;
+            font-weight: 500;
+            white-space: nowrap;
         }
 
         .status-grid {
@@ -355,6 +372,10 @@
             .section-title {
                 font-size: 1.5em;
             }
+
+            .last-refresh {
+                font-size: 0.85em;
+            }
         }
     </style>
 </head>
@@ -370,10 +391,15 @@
 
         <!-- Task Status Section -->
         <div class="status-section">
-            <h2 class="section-title">
-                <span class="icon">📊</span>
-                Task Status Overview
-            </h2>
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="icon">📊</span>
+                    Task Status Overview
+                </h2>
+                <!-- small timestamp on the right -->
+                <div class="last-refresh" id="lastRefresh">Last updated: --</div>
+            </div>
+
             <div class="status-grid">
                 <div class="status-card total" onclick="showDetails('total')">
                     <div class="status-icon">📋</div>
@@ -457,8 +483,8 @@
         // 1) Google Sheet URL (docs.google.com/spreadsheets/d/...) -> CSV export will be used
         // 2) Apps Script webapp URL (script.google.com/macros/...) -> JSON expected
         // ============================================
-        // Changed to the Google Sheet URL you specified below (CSV export will be used).
-        // IMPORTANT: Make sure the sheet is shared "Anyone with the link can view" for this to work from a browser.
+        // Using the Google Sheet URL you specified (CSV export will be used).
+        // IMPORTANT: Make sure the sheet is shared "Anyone with the link can view" for browser fetch to work.
         const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ermkWkx9CD6JA6BHO9t4BaQoYW4m9-Kf4SeRDvQmrVU/edit?gid=0#gid=0';
 
         // If given a docs.google.com/spreadsheets URL, convert to CSV export URL.
@@ -545,10 +571,22 @@
             document.getElementById('wipCount').textContent = '12';
             document.getElementById('closedCount').textContent = '28';
             document.getElementById('pendingCount').textContent = '5';
+            const el = document.getElementById('lastRefresh');
+            if (el) el.textContent = 'Last updated: --';
         }
 
         function showDetails(status) {
             alert(`Showing details for ${status.toUpperCase()} tasks`);
+        }
+
+        // Helper to set last refresh timestamp (human-friendly)
+        function setLastRefreshLabel(success = true, note = '') {
+            const el = document.getElementById('lastRefresh');
+            if (!el) return;
+            const now = new Date();
+            const timeStr = now.toLocaleString();
+            if (success) el.textContent = `Last updated: ${timeStr}`;
+            else el.textContent = `Last update failed: ${timeStr}` + (note ? ` (${note})` : '');
         }
 
         // Main fetch routine (supports JSON from Apps Script OR CSV from sheet)
@@ -556,7 +594,7 @@
             try {
                 const url = getSheetCSVUrl(GOOGLE_SHEET_URL);
                 if (!url) return;
-                // We set no-cache and add timestamp in URL to force fresh data on each call
+                // We set no-store and add timestamp in URL to force fresh data on each call
                 const resp = await fetch(url, { cache: 'no-store', mode: 'cors' });
                 if (!resp.ok) throw new Error(`Network response was not ok: ${resp.status}`);
 
@@ -619,18 +657,20 @@
                 const totalVal = dataMap.total || dataMap['all'] || dataMap['total tasks'] || dataMap['total_tasks'] || 0;
                 const wipVal = dataMap.wip || dataMap['in progress'] || dataMap['inprogress'] || dataMap.working || 0;
                 const closedVal = dataMap.closed || dataMap.completed || dataMap['done'] || 0;
-                const pendingVal = dataMap.pending || dataMap['on hold'] || dataMap['pending tasks'] || 0;
+                const pendingVal = dataMap.pending || dataMap['on hold'] || dataMap['pending tasks'] || dataMap['pending'] || 0;
 
                 animateCount('totalCount', totalVal);
                 animateCount('wipCount', wipVal);
                 animateCount('closedCount', closedVal);
                 animateCount('pendingCount', pendingVal);
 
+                setLastRefreshLabel(true);
                 console.log('✅ Data loaded', { totalVal, wipVal, closedVal, pendingVal, dataMap });
             } catch (err) {
                 console.error('❌ Error fetching/parsing data:', err);
                 console.log('Make sure your Google Sheet is shared as "Anyone with the link can view" or deploy an Apps Script webapp set to "Anyone, even anonymous" and use its URL.');
                 setDefaultCounts();
+                setLastRefreshLabel(false, err.message || '');
             }
         }
 
