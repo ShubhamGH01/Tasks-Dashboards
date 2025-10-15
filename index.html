@@ -406,15 +406,15 @@
                     <div class="status-count" id="totalCount">45</div>
                     <div class="status-label">Total Tasks</div>
                 </div>
-                <div class="status-card wip" onclick="showDetails('wip')">
-                    <div class="status-icon">⚙️</div>
-                    <div class="status-count" id="wipCount">12</div>
-                    <div class="status-label">In Progress</div>
-                </div>
                 <div class="status-card closed" onclick="showDetails('closed')">
                     <div class="status-icon">✅</div>
                     <div class="status-count" id="closedCount">28</div>
                     <div class="status-label">Completed</div>
+                </div>
+                <div class="status-card wip" onclick="showDetails('wip')">
+                    <div class="status-icon">⚙️</div>
+                    <div class="status-count" id="wipCount">12</div>
+                    <div class="status-label">In Progress</div>
                 </div>
                 <div class="status-card pending" onclick="showDetails('pending')">
                     <div class="status-icon">⏳</div>
@@ -670,17 +670,17 @@
 
                 // Map keys to UI
                 const totalVal = dataMap.total || dataMap['all'] || dataMap['total tasks'] || dataMap['total_tasks'] || 0;
+                const closedVal = dataMap.closed || dataMap.completed || dataMap['done'] || 0;                
                 const wipVal = dataMap.wip || dataMap['in progress'] || dataMap['inprogress'] || dataMap.working || 0;
-                const closedVal = dataMap.closed || dataMap.completed || dataMap['done'] || 0;
                 const pendingVal = dataMap.pending || dataMap['on hold'] || dataMap['pending tasks'] || dataMap['pending'] || 0;
 
                 animateCount('totalCount', totalVal);
+                animateCount('closedCount', closedVal);                
                 animateCount('wipCount', wipVal);
-                animateCount('closedCount', closedVal);
                 animateCount('pendingCount', pendingVal);
 
                 setLastRefreshLabel('success');
-                console.log('✅ Data loaded', { totalVal, wipVal, closedVal, pendingVal, dataMap });
+                console.log('✅ Data loaded', { totalVal, closedVal, wipVal, pendingVal, dataMap });
             } catch (err) {
                 console.error('❌ Error fetching/parsing data:', err);
                 setDefaultCounts();
