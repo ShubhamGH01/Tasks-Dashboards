@@ -201,15 +201,16 @@
         .status-card.total::before {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-
+        
+        .status-card.closed::before {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+             
         .status-card.wip::before {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        .status-card.closed::before {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
+        
         .status-card.pending::before {
             background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
         }
@@ -567,10 +568,10 @@
         }
 
         function setDefaultCounts() {
-            document.getElementById('totalCount').textContent = '45';
-            document.getElementById('wipCount').textContent = '12';
-            document.getElementById('closedCount').textContent = '28';
-            document.getElementById('pendingCount').textContent = '5';
+            document.getElementById('totalCount').textContent = '0';
+            document.getElementById('wipCount').textContent = '0';
+            document.getElementById('closedCount').textContent = '0';
+            document.getElementById('pendingCount').textContent = '0';
             const el = document.getElementById('lastRefresh');
             if (el) el.textContent = 'Last updated: --';
         }
